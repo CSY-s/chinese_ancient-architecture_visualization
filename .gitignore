@@ -1,0 +1,7 @@
+node_modules/
+dist/
+tmp_data_inspect/
+.vite-dev.out.log
+.vite-dev.err.log
+.DS_Store
+Thumbs.db
