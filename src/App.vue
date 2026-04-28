@@ -8,6 +8,7 @@
           <p class="hero-subtitle">数据截止 2025 年底 · 基于 439 处国保样本与本地工程支撑数据专题整理</p>
           <div class="hero-actions">
             <button type="button" class="ghost-button" @click="showGallery = true">扩展图谱</button>
+            <span class="analysis-hint">点击任意图形区块可查看该部分的数据明细与分析摘要</span>
           </div>
         </div>
         <div class="hero-mini-cards">
@@ -26,15 +27,15 @@
     </header>
 
     <section class="dashboard-grid">
-      <article class="radar-card card-shell clickable" @click="openChartZoom(chartConfigs.radar)">
+      <article class="radar-card card-shell clickable" @click="openChartZoom(chartConfigs.radar, chartConfigs.radar.metricCards?.[0])">
         <div class="card-head">
           <div>
             <span class="mini-label">风险雷达</span>
             <h3>风险维度对比</h3>
           </div>
-          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.radar)">放大图</button>
+          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.radar, chartConfigs.radar.metricCards?.[0])">放大图</button>
         </div>
-        <RadarChart @select="openDetail" />
+        <RadarChart @select="(detail) => openDetailAt('right', detail)" />
       </article>
 
       <article class="state-card card-shell">
@@ -43,7 +44,7 @@
             <span class="mini-label">核心主图</span>
             <h3>保存现状比例</h3>
           </div>
-          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.state)">放大图</button>
+          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.state, statusPanels.完好.summaryCards?.[0] ? { title: statusPanels.完好.title, subtitle: statusPanels.完好.subtitle, summary: statusPanels.完好.summaryCards[0].text, tags: ['保存现状', '状态分组'], facts: [{ label: '默认状态', value: '完好' }, { label: '状态占比', value: '42%' }], highlights: statusPanels.完好.sections?.flatMap((section) => section.items).slice(0, 2) } : null)">放大图</button>
         </div>
         <div class="state-layout">
           <div class="state-legend">
@@ -57,7 +58,7 @@
             <div class="danger-line">⚠ 危险状态合计 {{ dangerShare }}%，其中县保对象的濒危压力更高。</div>
           </div>
           <div class="state-chart">
-            <PieChart @select="handleStatusDetail" />
+            <PieChart @select="(detail) => handleStatusDetail(detail, 'right')" />
           </div>
         </div>
       </article>
@@ -85,7 +86,7 @@
             </article>
           </div>
           <div class="digital-chart">
-            <DigitalProgressChart @select="openDetail" />
+            <DigitalProgressChart @select="(detail) => openDetailAt('right', detail)" />
           </div>
         </div>
       </article>
@@ -99,7 +100,7 @@
           <button type="button" class="ghost-button" @click.stop="openPanelZoom(monitorPanel)">展开</button>
         </div>
         <div class="chart-panel" @click.stop>
-          <RiskAlertChart @select="openDetail" />
+          <RiskAlertChart @select="(detail) => openDetailAt('left', detail)" />
         </div>
       </article>
 
@@ -131,31 +132,31 @@
             </article>
           </div>
           <div class="funding-visual">
-            <FundingChart @select="openDetail" />
+            <FundingChart @select="(detail) => openDetailAt('right', detail)" />
           </div>
         </div>
       </article>
 
-      <article class="level-card card-shell clickable" @click="openChartZoom(chartConfigs.level)">
+      <article class="level-card card-shell clickable" @click="openChartZoom(chartConfigs.level, chartConfigs.level.metricCards?.[0])">
         <div class="card-head">
           <div>
             <span class="mini-label">层级结构</span>
             <h3>国保 / 省保 / 市保 / 县保</h3>
           </div>
-          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.level)">放大图</button>
+          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.level, chartConfigs.level.metricCards?.[0])">放大图</button>
         </div>
-        <BarChart @select="openDetail" />
+        <BarChart @select="(detail) => openDetailAt('right', detail)" />
       </article>
 
-      <article class="trend-card card-shell clickable" @click="openChartZoom(chartConfigs.trend)">
+      <article class="trend-card card-shell clickable" @click="openChartZoom(chartConfigs.trend, chartConfigs.trend.metricCards?.[0])">
         <div class="card-head">
           <div>
             <span class="mini-label">数字化趋势</span>
             <h3>覆盖率时间变化</h3>
           </div>
-          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.trend)">放大图</button>
+          <button type="button" class="ghost-button" @click.stop="openChartZoom(chartConfigs.trend, chartConfigs.trend.metricCards?.[0])">放大图</button>
         </div>
-        <LineChart @select="openDetail" />
+        <LineChart @select="(detail) => openDetailAt('left', detail)" />
       </article>
 
       <article class="disease-card card-shell clickable" @click="openPanelZoom(diseasePanel)">
@@ -167,22 +168,21 @@
           <button type="button" class="ghost-button" @click.stop="openPanelZoom(diseasePanel)">展开</button>
         </div>
         <div class="chart-panel" @click.stop>
-          <DiseaseRankingChart @select="openDetail" />
+          <DiseaseRankingChart @select="(detail) => openDetailAt('left', detail)" />
         </div>
       </article>
 
       <article class="findings-card card-shell clickable" @click="openPanelZoom(findingsPanel)">
         <div class="card-head">
           <div>
-            <span class="mini-label">关键发现</span>
-            <h3>一页结论</h3>
+            <span class="mini-label">交叉分析</span>
+            <h3>病害 × 层级热力</h3>
           </div>
           <button type="button" class="ghost-button" @click.stop="openPanelZoom(findingsPanel)">展开</button>
         </div>
-        <ul class="findings-list">
-          <li v-for="item in keyFindings.slice(0, 3)" :key="item">{{ item }}</li>
-        </ul>
-        <p class="bottom-conclusion">27% 处于破损或濒危状态，资金缺口约 3.8 亿元，高风险点位 214 个。</p>
+        <div class="chart-panel" @click.stop>
+          <CrossHeatmapChart @select="(detail) => openDetailAt('left', detail)" />
+        </div>
       </article>
     </section>
 
@@ -216,7 +216,7 @@
           <template v-if="zoomedChart.key === 'state'">
             <div class="state-zoom-layout">
               <div class="zoom-chart-stage state-chart-stage">
-                <component :is="zoomedChart.component" @select="handleStatusDetail" />
+                <component :is="zoomedChart.component" @select="(detail) => handleStatusDetail(detail, zoomedChart.side || 'right')" />
               </div>
               <section v-if="activeStatePanel" class="state-side-panel">
                 <div class="panel-headline">
@@ -252,21 +252,36 @@
           </template>
           <template v-else>
             <div class="zoom-chart-stage">
-              <component :is="zoomedChart.component" @select="openDetail" />
+              <component :is="zoomedChart.component" @select="(detail) => openDetailAt(zoomedChart.side || 'right', detail)" />
             </div>
             <div class="zoom-note-grid">
               <article class="zoom-note-card">
-                <span>数据来源</span>
+                <div class="zoom-note-head">
+                  <span>数据来源</span>
+                  <button type="button" class="inline-source-toggle" @click="openDataSourceOverlay('chart')">
+                    查看数据
+                  </button>
+                </div>
                 <strong>{{ zoomedChart.source }}</strong>
                 <p>{{ zoomedChart.sourceText }}</p>
               </article>
               <article class="zoom-note-card">
-                <span>分析方法</span>
+                <div class="zoom-note-head">
+                  <span>分析方法</span>
+                  <button type="button" class="inline-source-toggle" @click="openInsightOverlay('chart', 'method')">
+                    查看方法
+                  </button>
+                </div>
                 <strong>{{ zoomedChart.method }}</strong>
                 <p>{{ zoomedChart.methodText }}</p>
               </article>
               <article class="zoom-note-card">
-                <span>结论</span>
+                <div class="zoom-note-head">
+                  <span>结论</span>
+                  <button type="button" class="inline-source-toggle" @click="openInsightOverlay('chart', 'conclusion')">
+                    查看结论
+                  </button>
+                </div>
                 <strong>{{ zoomedChart.finding }}</strong>
                 <p>{{ zoomedChart.findingText }}</p>
               </article>
@@ -311,13 +326,43 @@
             <button type="button" class="ghost-button" @click="closePanelZoom">收起</button>
           </div>
           <div v-if="zoomedPanel.component" class="zoom-chart-stage panel-chart-stage">
-            <component :is="zoomedPanel.component" @select="openDetail" />
+            <component :is="zoomedPanel.component" @select="(detail) => openDetailAt(zoomedPanel.side || 'right', detail)" />
           </div>
           <div v-if="zoomedPanel.summaryCards" class="zoom-note-grid">
             <article v-for="card in zoomedPanel.summaryCards" :key="card.label" class="zoom-note-card">
               <span>{{ card.label }}</span>
               <strong>{{ card.value }}</strong>
               <p>{{ card.text }}</p>
+            </article>
+            <article class="zoom-note-card">
+              <div class="zoom-note-head">
+                <span>数据来源</span>
+                <button type="button" class="inline-source-toggle" @click="openDataSourceOverlay('panel')">
+                  查看数据
+                </button>
+              </div>
+              <strong>{{ zoomedPanel.title }} 使用数据</strong>
+              <p>点开后查看本项目全部数据底座与字段用途。</p>
+            </article>
+            <article v-if="zoomedPanel.methodSteps" class="zoom-note-card">
+              <div class="zoom-note-head">
+                <span>分析方法</span>
+                <button type="button" class="inline-source-toggle" @click="openInsightOverlay('panel', 'method')">
+                  查看方法
+                </button>
+              </div>
+              <strong>{{ zoomedPanel.title }} 分析路径</strong>
+              <p>点开后查看这张图如何分类、比较并得到结论。</p>
+            </article>
+            <article v-if="zoomedPanel.conclusionFacts" class="zoom-note-card">
+              <div class="zoom-note-head">
+                <span>结论</span>
+                <button type="button" class="inline-source-toggle" @click="openInsightOverlay('panel', 'conclusion')">
+                  查看结论
+                </button>
+              </div>
+              <strong>{{ zoomedPanel.title }} 核心发现</strong>
+              <p>点开后查看用具体数据支撑的关键结论。</p>
             </article>
           </div>
           <div v-if="zoomedPanel.evidenceCards" class="zoom-metric-grid">
@@ -353,9 +398,152 @@
     </Transition>
 
     <Transition name="zoom-fade">
-      <div v-if="selectedDetail" class="detail-toast" :class="{ pulse: detailPulse }">
-        <strong>{{ selectedDetail.title }}</strong>
-        <span>{{ selectedDetail.subtitle }}</span>
+      <div v-if="dataSourceOverlay" class="zoom-mask" @click.self="closeDataSourceOverlay">
+        <section class="zoom-panel card-shell data-source-modal">
+          <div class="zoom-head">
+            <div>
+              <span class="detail-kicker">数据来源</span>
+              <h2>项目数据总表</h2>
+              <p class="zoom-subtitle">这里单独列出所有数据底座、字段口径和用途，避免挤占图形分析区域。</p>
+            </div>
+            <button type="button" class="ghost-button" @click="closeDataSourceOverlay">收起</button>
+          </div>
+          <div class="analysis-pill-row">
+            <button
+              v-for="category in dataSourceCategories"
+              :key="`overlay-${category}`"
+              type="button"
+              class="analysis-pill"
+              :class="{ active: activeDataSourceOverlayCategory === category }"
+              @click="activeDataSourceOverlayCategory = category"
+            >
+              {{ category }}
+            </button>
+          </div>
+          <div class="data-source-summary">
+            <span>当前分类</span>
+            <strong>{{ activeDataSourceOverlayCategory }}</strong>
+            <p>当前显示 {{ getVisibleOverlayDataSources().length }} / {{ allDataSources.length }} 张数据表，点击行可推送到侧边摘要区。</p>
+          </div>
+          <div class="analysis-table data-source-table">
+            <div class="analysis-table-head">
+              <span>数据表</span>
+              <span>规模</span>
+              <span>字段与用途</span>
+            </div>
+            <button
+              v-for="item in getVisibleOverlayDataSources()"
+              :key="`overlay-row-${item.dataset}`"
+              type="button"
+              class="analysis-table-row"
+              @click="openDetailAt(dataSourceOverlay === 'chart' ? (zoomedChart?.side || 'right') : (zoomedPanel?.side || 'right'), {
+                title: item.dataset,
+                subtitle: item.source,
+                summary: `该数据表归属于${item.category}，当前规模为 ${item.scale}。`,
+                tags: [item.category, '数据来源'],
+                facts: [
+                  { label: '数据规模', value: item.scale },
+                  { label: '来源口径', value: item.source }
+                ],
+                highlights: [
+                  `字段组成：${item.fields}`,
+                  `主要用途：${item.usage}`
+                ]
+              })"
+            >
+              <span>{{ item.dataset }}</span>
+              <strong>{{ item.scale }}</strong>
+              <p><em>{{ item.fields }}</em>{{ item.usage }}</p>
+            </button>
+          </div>
+        </section>
+      </div>
+    </Transition>
+
+    <Transition name="zoom-fade">
+      <div v-if="insightOverlay" class="zoom-mask" @click.self="closeInsightOverlay">
+        <section class="zoom-panel card-shell data-source-modal">
+          <div class="zoom-head">
+            <div>
+              <span class="detail-kicker">{{ insightOverlay.type === 'method' ? '分析方法' : '数据结论' }}</span>
+              <h2>{{ insightOverlay.type === 'method' ? '分析路径说明' : '结论证据清单' }}</h2>
+              <p class="zoom-subtitle">
+                {{ insightOverlay.type === 'method' ? '这里单独展示分类、比较和判断过程。' : '这里单独展示由数据支持的核心发现。' }}
+              </p>
+            </div>
+            <button type="button" class="ghost-button" @click="closeInsightOverlay">收起</button>
+          </div>
+          <template v-if="insightOverlay.type === 'method'">
+            <div class="analysis-pill-row">
+              <button
+                v-for="(step, index) in getActiveMethodSteps()"
+                :key="`${insightOverlay.scope}-${step.title}`"
+                type="button"
+                class="analysis-pill"
+                :class="{ active: activeInsightStep === index }"
+                @click="activeInsightStep = index"
+              >
+                {{ step.title }}
+              </button>
+            </div>
+            <div class="analysis-step-body insight-step-panel">
+              <strong>{{ getActiveMethodSteps()[activeInsightStep]?.title }}</strong>
+              <p>{{ getActiveMethodSteps()[activeInsightStep]?.text }}</p>
+            </div>
+          </template>
+          <template v-else>
+            <div class="analysis-source-list insight-conclusion-list">
+              <div v-for="item in getActiveConclusionFacts()" :key="`${insightOverlay.scope}-${item.label}`" class="analysis-source-row">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+                <p>{{ item.text }}</p>
+              </div>
+            </div>
+          </template>
+        </section>
+      </div>
+    </Transition>
+
+    <Transition name="zoom-fade">
+      <div v-if="selectedDetail" class="detail-shell" :class="panelSide">
+        <button
+          v-if="detailPanelCollapsed"
+          type="button"
+          class="detail-toggle collapsed-toggle"
+          @click="detailPanelCollapsed = false"
+        >
+          展开摘要
+        </button>
+        <div
+          v-else
+          class="detail-toast detail-explorer"
+          :class="[panelSide, { pulse: detailPulse }]"
+        >
+          <div class="detail-explorer-head">
+            <div>
+              <span class="detail-kicker">图形明细</span>
+              <strong>{{ selectedDetail.title }}</strong>
+              <span>{{ selectedDetail.subtitle }}</span>
+            </div>
+            <button type="button" class="detail-toggle" @click="detailPanelCollapsed = true">收起</button>
+          </div>
+          <p v-if="selectedDetail.summary" class="detail-summary">{{ selectedDetail.summary }}</p>
+          <div v-if="selectedDetail.tags?.length" class="detail-tag-list">
+            <span v-for="tag in selectedDetail.tags" :key="tag" class="detail-tag">{{ tag }}</span>
+          </div>
+          <div v-if="selectedDetail.facts?.length" class="detail-fact-table">
+            <article v-for="fact in selectedDetail.facts" :key="`${selectedDetail.title}-${fact.label}`" class="detail-fact-row">
+              <span>{{ fact.label }}</span>
+              <strong>{{ fact.value }}</strong>
+            </article>
+          </div>
+          <div v-if="selectedDetail.highlights?.length" class="detail-highlight-block">
+            <span class="detail-subhead">分析摘要</span>
+            <ul>
+              <li v-for="item in selectedDetail.highlights" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </Transition>
   </div>
@@ -364,6 +552,7 @@
 <script setup>
 import { ref } from 'vue'
 import BarChart from './components/BarChart.vue'
+import CrossHeatmapChart from './components/CrossHeatmapChart.vue'
 import DigitalProgressChart from './components/DigitalProgressChart.vue'
 import DiseaseRankingChart from './components/DiseaseRankingChart.vue'
 import ExtendedChartGallery from './components/ExtendedChartGallery.vue'
@@ -376,9 +565,12 @@ import {
   defaultDetail,
   digitalProgressMetrics,
   diseaseSeverityRanking,
+  evolutionLineData,
   fundingMetrics,
+  glossaryTopics,
   monitoringMetrics,
   overviewStats,
+  popularityData,
   ratingPieData
 } from './components/architectureData.js'
 
@@ -415,6 +607,9 @@ const leakShare = Math.round((monitoringMetrics.byType[1].value / monitoringMetr
 const totalFunding = parseFloat(fundingMetrics.total)
 const fundingGapValue = parseFloat(fundingMetrics.gap)
 const fundingGapRatio = Math.round((fundingGapValue / (totalFunding + fundingGapValue)) * 100)
+const heatmapPeakValue = 72
+const countyBandAverage = 60
+const nationalBandAverage = 24
 
 const selectedDetail = ref(defaultDetail)
 const zoomedChart = ref(null)
@@ -422,7 +617,129 @@ const zoomedPanel = ref(null)
 const activeStatePanel = ref(null)
 const showGallery = ref(false)
 const detailPulse = ref(false)
+const panelSide = ref('right')
+const detailPanelCollapsed = ref(false)
+const activeChartMethodStep = ref(0)
+const activePanelMethodStep = ref(0)
+const activeChartDataCategory = ref('全部')
+const activePanelDataCategory = ref('全部')
+const showChartDataSources = ref(false)
+const showPanelDataSources = ref(false)
+const dataSourceOverlay = ref(null)
+const activeDataSourceOverlayCategory = ref('全部')
+const insightOverlay = ref(null)
+const activeInsightStep = ref(0)
 let pulseTimer = null
+
+const dataSourceCategories = ['全部', '基础底座', '保护层级', '数字化', '监测预警', '修缮投入', '病害分析']
+
+const allDataSources = [
+  {
+    category: '基础底座',
+    dataset: '国保样本底表',
+    scale: `${baseSampleCount} 处`,
+    source: '本地全国重点文物保护单位试用数据',
+    fields: '名称、地区、类型、保存状态、保护层级、代表特征',
+    usage: '用于保存现状、案例样本、状态分组和总量换算'
+  },
+  {
+    category: '保护层级',
+    dataset: '层级结构统计表',
+    scale: `${popularityData.reduce((sum, item) => sum + item.value, 0)} 条汇总`,
+    source: '国保 / 省保 / 市保 / 县保分级统计口径',
+    fields: '层级名称、数量、修缮响应差异、结构占比',
+    usage: '用于层级柱状图、交叉热力图和资源差异解释'
+  },
+  {
+    category: '数字化',
+    dataset: '数字化阶段指标表',
+    scale: `${digitalProgressMetrics.length} 项主指标`,
+    source: '扫描、建模、全景采集覆盖率整理结果',
+    fields: '阶段名称、覆盖率、阶段落差、说明文本',
+    usage: '用于数字化进度条、链条缺口判断和阶段比较'
+  },
+  {
+    category: '数字化',
+    dataset: '数字化时间序列表',
+    scale: `${evolutionLineData.periods.length} 年`,
+    source: '2020-2025 年数字化推进年度序列',
+    fields: '年份、扫描率、建模率、全景率',
+    usage: '用于趋势折线图和采集到展示的转化分析'
+  },
+  {
+    category: '监测预警',
+    dataset: '监测点位清单',
+    scale: `${monitoringMetrics.totalPoints} 个点位`,
+    source: '风险监测布点与阈值预警清单',
+    fields: '点位编号、病害类型、风险等级、是否高风险',
+    usage: '用于风险预警图、高风险占比和响应排序'
+  },
+  {
+    category: '监测预警',
+    dataset: '高风险病害分型表',
+    scale: `${monitoringMetrics.byType.length} 类病害`,
+    source: '高风险点位按病害类型聚合结果',
+    fields: '病害类型、高风险点数、占比、优先级',
+    usage: '用于病害排序、风险解释和结构性病害识别'
+  },
+  {
+    category: '修缮投入',
+    dataset: '修缮资金测算表',
+    scale: `${fundingMetrics.total} / 缺口 ${fundingMetrics.gap}`,
+    source: '修缮投入、年均投入与资金缺口专题估算',
+    fields: '总投入、年均投入、单处平均、资金缺口',
+    usage: '用于投入强度展示、缺口评估和优先配置说明'
+  },
+  {
+    category: '病害分析',
+    dataset: '病害严重度排序表',
+    scale: `${diseaseSeverityRanking.length} 类病害`,
+    source: '病害严重程度评分与说明文本',
+    fields: '病害名称、严重度分数、风险注释',
+    usage: '用于病害排序图和重点病害解读'
+  },
+  {
+    category: '病害分析',
+    dataset: '病害主题词表',
+    scale: `${glossaryTopics.length} 组主题词`,
+    source: '病害主题说明与典型部位知识整理',
+    fields: '主题名、权重、常见位置、风险意义',
+    usage: '用于病害说明、词汇扩展和点击摘要'
+  },
+  {
+    category: '病害分析',
+    dataset: '层级 × 病害交叉矩阵',
+    scale: '4 × 5 单元',
+    source: '保护层级与五类病害交叉统计热度矩阵',
+    fields: '层级、病害、热度值、热区判断',
+    usage: '用于交叉热力图和基层风险聚集结论'
+  }
+]
+
+const getVisibleDataSources = (scope) => {
+  const category = scope === 'chart' ? activeChartDataCategory.value : activePanelDataCategory.value
+  if (category === '全部') return allDataSources
+  return allDataSources.filter((item) => item.category === category)
+}
+
+const getVisibleOverlayDataSources = () => {
+  if (activeDataSourceOverlayCategory.value === '全部') return allDataSources
+  return allDataSources.filter((item) => item.category === activeDataSourceOverlayCategory.value)
+}
+
+const getActiveMethodSteps = () => {
+  if (!insightOverlay.value) return []
+  return insightOverlay.value.scope === 'chart'
+    ? (zoomedChart.value?.methodSteps || [])
+    : (zoomedPanel.value?.methodSteps || [])
+}
+
+const getActiveConclusionFacts = () => {
+  if (!insightOverlay.value) return []
+  return insightOverlay.value.scope === 'chart'
+    ? (zoomedChart.value?.conclusionFacts || [])
+    : (zoomedPanel.value?.conclusionFacts || [])
+}
 
 const keyFindings = [
   '国保对象的修缮及时率高于省保、市保与县保，说明高等级对象更容易获得优先投入。',
@@ -530,6 +847,7 @@ const alertPanel = {
   kicker: '核心风险',
   title: '危险状态占比说明',
   subtitle: '把保存状态比例换算成样本规模后，可以直接看出风险对象已经不是零散个案，而是一组需要排序响应的工作清单。',
+  side: 'right',
   fillClass: 'danger-fill',
   summaryCards: [
     { label: '破损占比', value: `${damagedShare}%`, text: '已经出现明显病害累积，需要进入修缮排序。' },
@@ -570,6 +888,7 @@ const digitalPanel = {
   title: '数字化推进情况',
   subtitle: '把扫描、建模、全景放在同一链条里看，重点不是“有没有做”，而是数据有没有顺利从采集走到可分析、可展示。',
   component: DigitalProgressChart,
+  side: 'right',
   fillClass: 'teal-fill',
   summaryCards: [
     { label: '已三维扫描', value: '68%', text: '基础采集推进最快。' },
@@ -580,6 +899,21 @@ const digitalPanel = {
     { label: '扫描-建模落差', value: `${scanModelGap} 个百分点`, text: '说明底图采集已经铺开，但数据加工与模型资产生产还没完全跟上。' },
     { label: '建模-全景落差', value: `${modelPanoramaGap} 个百分点`, text: '说明成果展示层和巡检档案层仍是当前链条的末端短板。' },
     { label: '链条总缺口', value: `${fullDigitalGap} 个百分点`, text: '从采集到展示之间的落差越大，越说明数字成果还没有完全转化成可复用资产。' }
+  ],
+  sourceItems: [
+    { label: '扫描样本', value: `${scanRate}%`, text: '来自数字化进度口径中的三维扫描覆盖率。' },
+    { label: '建模样本', value: `${modelRate}%`, text: '来自同一批样本的三维建模覆盖率。' },
+    { label: '全景样本', value: `${panoramaRate}%`, text: '来自展示档案与全景采集覆盖率。' }
+  ],
+  methodSteps: [
+    { title: '统一口径', text: '先把扫描、建模、全景都统一成覆盖率指标，避免不同单位混读。' },
+    { title: '阶段比较', text: '将三项指标放到同一链条中，比较前后环节的转化落差。' },
+    { title: '缺口判断', text: '以扫描到建模、建模到全景的差值，识别数字化流程中的堵点。' }
+  ],
+  conclusionFacts: [
+    { label: '扫描-建模差值', value: `${scanModelGap}pt`, text: '采集基础已建立，但模型转化仍有明显缺口。' },
+    { label: '建模-全景差值', value: `${modelPanoramaGap}pt`, text: '展示层和留档层仍慢于前段数据生产。' },
+    { label: '流程结论', value: '链条未闭合', text: '当前数字化更像“采集领先”，尚未完全进入深度应用阶段。' }
   ],
   metrics: digitalProgressMetrics.map((item) => ({
     ...item,
@@ -610,6 +944,7 @@ const fundingPanel = {
   title: '投入规模与资金缺口',
   subtitle: '这一板块不只是说明投了多少钱，而是判断投入结构能否覆盖当前风险规模，以及缺口会把哪些对象继续推向高压区。',
   component: FundingChart,
+  side: 'right',
   summaryCards: [
     { label: '总投入', value: fundingMetrics.total, text: '当前专题口径下的累计投入估算。' },
     { label: '年均投入', value: fundingMetrics.annualAverage, text: '反映年度投入节奏。' },
@@ -620,6 +955,21 @@ const fundingPanel = {
     { label: '缺口占需求比', value: `${fundingGapRatio}%`, text: '把现有投入和缺口合并看，说明仍有接近四分之一的资金需求没有被覆盖。' },
     { label: '风险对应关系', value: `${dangerCount} 处高压对象`, text: '结合危险状态样本量看，当前资源仍需要非常明确的优先级分配。' },
     { label: '决策提示', value: '不能平均分配', text: '越是高风险、高病害耦合对象，越需要在资金安排中获得更高权重。' }
+  ],
+  sourceItems: [
+    { label: '累计投入', value: fundingMetrics.total, text: '专题口径下的总投入估算值。' },
+    { label: '年度强度', value: fundingMetrics.annualAverage, text: '按同一时间范围整理的年均投入。' },
+    { label: '资金缺口', value: fundingMetrics.gap, text: '根据估算需求与现有投入形成的差额。' }
+  ],
+  methodSteps: [
+    { title: '金额归一', text: '把不同量级的资金指标映射到同一强度轴上，保证可比较。' },
+    { title: '结构判断', text: '同时看总投入、年均投入和单处平均，避免只看总金额。' },
+    { title: '缺口评估', text: '用缺口占需求比判断现有资源是否足以覆盖风险规模。' }
+  ],
+  conclusionFacts: [
+    { label: '缺口占比', value: `${fundingGapRatio}%`, text: '总需求中仍有接近四分之一没有被覆盖。' },
+    { label: '高压对象', value: `${dangerCount} 处`, text: '资金排序需要与危险状态对象数量对应。' },
+    { label: '资源结论', value: '需优先配置', text: '当前投入不能平均分配，而应向高风险病害集中。' }
   ],
   metrics: [
     { label: '总投入', value: fundingMetrics.total, width: '100%', text: '作为当前板块的基准强度。' },
@@ -651,6 +1001,7 @@ const monitorPanel = {
   title: '监测覆盖与高风险点位',
   subtitle: '这是最接近实际管理场景的一组数据，核心不是病害名称本身，而是哪些点位已经进入需要快速响应的阈值区。',
   component: RiskAlertChart,
+  side: 'left',
   fillClass: 'danger-fill',
   summaryCards: [
     { label: '监测点位', value: String(monitoringMetrics.totalPoints), text: '反映整体监测覆盖规模。' },
@@ -661,6 +1012,21 @@ const monitorPanel = {
     { label: '高风险占监测比', value: `${highRiskRatio}%`, text: `在 ${monitoringMetrics.totalPoints} 个监测点位中，约每 6 个就有 1 个进入高风险区。` },
     { label: '开裂占比', value: `${crackShare}%`, text: '开裂高风险点最多，说明结构性病害仍是最值得优先跟踪的一类。' },
     { label: '漏水占比', value: `${leakShare}%`, text: '漏水点位次高，意味着很多问题并不是孤立病害，而会继续带动腐朽和表层退化。' }
+  ],
+  sourceItems: [
+    { label: '监测总量', value: String(monitoringMetrics.totalPoints), text: '来自监测布点与风险采集清单。' },
+    { label: '高风险点', value: String(monitoringMetrics.highRiskPoints), text: '达到预警阈值的重点点位数量。' },
+    { label: '病害分型', value: '4 类', text: '按开裂、漏水、风化、腐朽分类统计。' }
+  ],
+  methodSteps: [
+    { title: '阈值筛选', text: '先识别达到高风险阈值的点位，再进入分类统计。' },
+    { title: '类型聚合', text: '将高风险点位按病害类型聚合，比较哪类最集中。' },
+    { title: '响应排序', text: '结合覆盖率与点位规模，判断监测体系是否跟上了风险。' }
+  ],
+  conclusionFacts: [
+    { label: '高风险占比', value: `${highRiskRatio}%`, text: '约每 6 个监测点就有 1 个进入高风险区。' },
+    { label: '结构风险最高', value: `${crackShare}%`, text: '开裂仍是最值得优先盯防的风险类型。' },
+    { label: '联合病害', value: `${leakShare}%`, text: '漏水持续居高，说明水害与结构风险存在联动。' }
   ],
   metrics: monitoringMetrics.byType.map((item) => ({
     ...item,
@@ -690,6 +1056,7 @@ const diseasePanel = {
   title: '病害严重程度排序',
   subtitle: '按严重程度排序展示病害优先级，让可视化从“识别病害”进一步走到“判断先救谁”。',
   component: DiseaseRankingChart,
+  side: 'left',
   fillClass: 'orange-fill',
   summaryCards: [
     { label: '最高优先病害', value: '开裂', text: '结构与节点风险最高。' },
@@ -700,6 +1067,21 @@ const diseasePanel = {
     { label: '第一优先', value: '开裂 92 分', text: '结构性病害一旦跨过阈值，后续修复成本和安全风险都会快速上升。' },
     { label: '第二优先', value: '漏水 86 分', text: '它最大的危险不只是单一病害，而是会持续放大木构腐朽和彩饰剥落。' },
     { label: '排序逻辑', value: '严重度而非频次', text: '当前排序强调管理急迫性，因此更接近实际修缮决策。' }
+  ],
+  sourceItems: [
+    { label: '病害维度', value: '5 类', text: '开裂、漏水、腐朽、风化、人为破坏统一进入比较。' },
+    { label: '排序指标', value: '3 项', text: '严重度、监测优先级、影响范围共同决定排序。' },
+    { label: '目标口径', value: '优先级判断', text: '重点不是频次，而是处置急迫性。' }
+  ],
+  methodSteps: [
+    { title: '建立指标', text: '先为每类病害赋予严重度、优先级和影响范围三个维度。' },
+    { title: '统一评分', text: '将三类指标统一到 100 分尺度，再进行横向比较。' },
+    { title: '排序输出', text: '按综合判断结果形成病害处理优先级，而不是常见度排行。' }
+  ],
+  conclusionFacts: [
+    { label: '最高优先', value: '开裂 92', text: '结构性病害仍是最需要优先处理的一类。' },
+    { label: '第二优先', value: '漏水 88', text: '漏水易诱发连锁病害，因此不能仅按局部水害处理。' },
+    { label: '排序结论', value: '急迫性优先', text: '当前图表输出的是“先救谁”，不是“谁最多”。' }
   ],
   metrics: diseaseSeverityRanking.map((item) => ({
     label: item.name,
@@ -727,39 +1109,56 @@ const diseasePanel = {
 }
 
 const findingsPanel = {
-  kicker: '关键发现',
-  title: '看板结论汇总',
-  subtitle: '把层级、状态、数字化和预警四条线索汇成一页，形成“样本现状 - 风险判断 - 资源响应”的完整叙事。',
+  kicker: '交叉分析',
+  title: '病害 × 层级交叉热力',
+  subtitle: '把病害类型与保护层级交叉后，能更直观看到哪些风险并不是平均分布，而是在基层对象中持续累积。',
+  component: CrossHeatmapChart,
+  side: 'left',
   summaryCards: [
-    { label: '样本底座', value: `${baseSampleCount} 处`, text: '当前分析叙事建立在国保样本和本地工程支撑数据的联合整理之上。' },
-    { label: '危险状态', value: `${dangerShare}%`, text: `约 ${dangerCount} 处对象已经进入需要优先管理的区间。` },
-    { label: '关键瓶颈', value: '建模与资金', text: '一个影响数字化闭环，一个决定修缮响应强度。' }
+    { label: '最强热区', value: '县保 × 开裂', text: `热度值 ${heatmapPeakValue}，说明结构性病害在基层对象中更集中。` },
+    { label: '次强热区', value: '县保 × 漏水', text: '说明水害与结构风险并不是分离出现，而是存在连续耦合。' },
+    { label: '对照组', value: '国保整体较低', text: `国保热区均值约 ${nationalBandAverage}，明显低于基层对象。` }
   ],
   evidenceCards: [
-    { label: '风险结论', value: '27% 高压区', text: '危险状态已经达到足以改变资源分配策略的规模。' },
-    { label: '过程结论', value: `${scanModelGap}pt 数字化落差`, text: '说明当前工作重心应从采集扩展到模型加工与成果沉淀。' },
-    { label: '行动结论', value: `${monitoringMetrics.highRiskPoints} 个高风险点`, text: '预警体系已经给出明确的优先巡检和响应对象。' }
+    { label: '基层热区均值', value: `${countyBandAverage}`, text: '县保所在列整体热度最高，说明风险并非随机散落，而是沿层级明显下沉。' },
+    { label: '结构水害耦合', value: '开裂 + 漏水', text: '两类病害在县保和市保列中同时偏高，适合解释连锁病害为什么需要联合治理。' },
+    { label: '管理含义', value: '优先做基层预防维护', text: '热力图给出的不是单点案例，而是结构性风险分布，适合作为资源倾斜依据。' }
+  ],
+  sourceItems: [
+    { label: '交叉维度', value: '4 × 5', text: '保护层级与 5 类病害做交叉统计。' },
+    { label: '热区峰值', value: `${heatmapPeakValue}`, text: '当前交叉统计中的最高热度值。' },
+    { label: '对照组', value: `${nationalBandAverage}`, text: '国保层整体热度均值，用作比较基线。' }
+  ],
+  methodSteps: [
+    { title: '分组交叉', text: '先按保护层级与病害类型做双维分组统计。' },
+    { title: '热度映射', text: '把每个交叉单元转换为热度值，以颜色深浅表达集中程度。' },
+    { title: '热区提炼', text: '识别连续高热区，判断风险是否在基层对象中聚集。' }
+  ],
+  conclusionFacts: [
+    { label: '峰值单元', value: '县保 × 开裂', text: '说明结构性病害在基层对象中最集中。' },
+    { label: '连续热带', value: '县保列最强', text: '县保在多类病害上持续偏高，不是单点异常。' },
+    { label: '分析结论', value: '基层聚集风险', text: '热力图证明风险分布具有层级性和结构性。' }
   ],
   sections: [
     {
-      title: '层级结论',
-      intro: '文保等级最适合用来解释资源分配差异。',
-      items: ['国保修缮及时率更高。', '县保濒危压力更高。', '层级差异背后本质上是资源密度与管理能力差异。']
+      title: '读图方法',
+      intro: '横向看病害在不同层级中的分布，纵向看同一层级最集中的病害类型，颜色越深表示越值得优先关注。',
+      items: ['先看最深色单元格在哪里。', '再看深色是否在同一层级形成连续带。', '最后判断这些热区是否已经对应到监测和资金安排。']
     },
     {
-      title: '状态结论',
-      intro: '一般、破损和濒危对象构成了真正的压力层。',
-      items: ['破损与濒危合计 27%。', '濒危对象最需要快速响应。', '破损对象更适合通过提前治理避免继续升级。']
+      title: '核心发现',
+      intro: '这张图最有价值的地方，不是告诉我们“哪种病害常见”，而是告诉我们“哪种病害在哪一层最集中”。',
+      items: ['县保对象在开裂、漏水、风化三类病害上形成连续高热区。', '国保整体热度较低，说明高等级对象的资源响应更及时。', '市保与县保之间的热度抬升最明显，意味着基层压力在快速累积。']
     },
     {
-      title: '过程结论',
-      intro: '数字化和监测两条线决定了“能不能看见问题”和“能不能及时行动”。',
-      items: [`扫描到全景之间仍有 ${fullDigitalGap} 个百分点的成果转化落差。`, `高风险点位 ${monitoringMetrics.highRiskPoints} 个，已经足以支撑差异化巡检策略。`, '数据不再只是展示材料，而是在逐步转化为决策依据。']
+      title: '为什么适合比赛',
+      intro: '交叉热力图比单独排序更像数据分析作品，因为它展示的是变量之间的关系，而不是一列单值排行榜。',
+      items: ['它体现了分组统计与交叉分析。', '它能自然导出结构性结论，而不是只给单点描述。', '它和病害排序、风险预警、资金投入可以形成完整证据链。']
     },
     {
-      title: '管理建议',
-      intro: '整页最重要的创新点，是把分散图表组织成一条能被解释清楚的管理链路。',
-      items: ['先用状态图定义问题规模。', '再用病害和预警图定义优先对象。', '最后用资金和数字化图解释治理能力与短板。']
+      title: '展示建议',
+      intro: '如果这是比赛现场展示页，这张图非常适合被放在“关键发现”位置，因为它最能证明你做过数据拆解与对比分析。',
+      items: ['先讲热区集中在哪一层。', '再讲这些热区为何和资金、预警联动。', '最后回到资源如何从“平均投入”转向“重点倾斜”。']
     }
   ]
 }
@@ -767,15 +1166,31 @@ const findingsPanel = {
 const chartConfigs = {
   radar: {
     key: 'radar',
+    side: 'right',
     title: '风险维度对比',
     subtitle: '木构、石窟、古城等类型在病害风险和环境压力上存在差异。',
     component: RadarChart,
     source: '专题整合指标层',
     sourceText: '基于遗产类型、病害、环境与修缮需求的标准化整理结果。',
+    sourceItems: [
+      { label: '遗产类型', value: '5 类', text: '木构、石窟、古城、园林、近现代建筑统一纳入风险比较。' },
+      { label: '风险维度', value: '5 维', text: '病害风险、环境压力、监测覆盖、数字化程度、修缮需求。' },
+      { label: '评分口径', value: '0-100', text: '所有维度统一归一化后再画雷达。' }
+    ],
     method: '归一化评分 + 雷达比较',
     methodText: '将不同量纲统一到 0-100 分，再进行类型对照。',
+    methodSteps: [
+      { title: '变量选取', text: '选取不同遗产类型都具可比性的五个风险维度。' },
+      { title: '归一化处理', text: '把不同量纲统一映射到 0 到 100 分，确保同图可读。' },
+      { title: '形态比较', text: '通过轮廓外扩程度与形状差异判断类型画像。' }
+    ],
     finding: '不同遗产类型的风险画像并不相同',
     findingText: '木构和石窟类对象的高风险项不一样，保护策略不能一刀切。',
+    conclusionFacts: [
+      { label: '最高修缮需求', value: '木构古建筑', text: '木构在结构病害与维护需求上更高。' },
+      { label: '最高环境压力', value: '石窟寺石刻', text: '石窟在风化与微环境压力上更集中。' },
+      { label: '分析结论', value: '类型差异明显', text: '同一套保护策略无法覆盖所有遗产类型。' }
+    ],
     metricCards: [
       { label: '最高风险类型', value: '木构 / 石窟', text: '结构病害与环境压力均落在高值区。' },
       { label: '最高修缮需求', value: '木构古建筑', text: '节点变形、漏水、腐朽会持续累积。' },
@@ -806,15 +1221,31 @@ const chartConfigs = {
   },
   state: {
     key: 'state',
+    side: 'right',
     title: '保存现状比例',
     subtitle: '完好、一般、破损、濒危的比例是整页看板最核心的一组数字。',
     component: PieChart,
     source: '保存现状专题指标',
     sourceText: '状态分类经过统一口径整理后形成比例结构。',
+    sourceItems: [
+      { label: '状态分类', value: '4 类', text: '完好、一般、破损、濒危统一进入分组统计。' },
+      { label: '样本规模', value: `${baseSampleCount} 处`, text: '以当前国保样本为主要统计底座。' },
+      { label: '风险对象', value: `${dangerCount} 处`, text: '由破损与濒危占比折算得到。' }
+    ],
     method: '分组统计 + 比例计算',
     methodText: '按保存状态分类统计对象数量，再计算总体占比。',
+    methodSteps: [
+      { title: '统一分类', text: '先把保护对象按完好、一般、破损、濒危统一分层。' },
+      { title: '比例计算', text: '统计每层对象数量并转成总体占比。' },
+      { title: '风险汇总', text: '将破损与濒危合并成危险状态，识别总体压力。' }
+    ],
     finding: '危险状态合计 27%',
     findingText: '破损与濒危对象的合计占比已经足以支撑风险优先级判断。',
+    conclusionFacts: [
+      { label: '危险状态', value: `${dangerShare}%`, text: '说明风险不再是个别案例。' },
+      { label: '折算样本', value: `${dangerCount} 处`, text: '对应当前样本中的重点关注对象。' },
+      { label: '分析结论', value: '需优先干预', text: '破损与濒危比例足以支撑修缮排序。' }
+    ],
     metricCards: [
       { label: '完好', value: '42%', text: '适合展示预防性保护和长期维护机制。' },
       { label: '一般', value: '31%', text: '构成数量最多的持续维护压力层。' },
@@ -845,15 +1276,31 @@ const chartConfigs = {
   },
   level: {
     key: 'level',
+    side: 'right',
     title: '保护层级结构',
     subtitle: '层级结构适合解释资源投入差异和案例代表性差异。',
     component: BarChart,
     source: '保护层级分组数据',
     sourceText: '国保样本来自本地底座，其余层级用于完整呈现层级结构。',
+    sourceItems: [
+      { label: '层级范围', value: '4 层', text: '国保、省保、市保、县保统一纳入比较。' },
+      { label: '国保样本', value: '439', text: '当前看板中最稳定的本地底座数据。' },
+      { label: '比较对象', value: '结构 + 响应', text: '同时用于解释层级规模与资源差异。' }
+    ],
     method: '频次统计 + 结构比较',
     methodText: '按保护层级分组计数后做柱状对比。',
+    methodSteps: [
+      { title: '层级分组', text: '把样本按保护层级拆成四组。' },
+      { title: '结构比较', text: '比较各层级在总体中的数量与资源响应差异。' },
+      { title: '风险映射', text: '结合保存状态和资金图解释层级背后的压力。' }
+    ],
     finding: '层级差异清晰',
     findingText: '高等级对象更容易获得及时修缮，县保对象的风险压力相对更高。',
+    conclusionFacts: [
+      { label: '最强响应', value: '国保', text: '高等级对象更容易获得持续投入与监测。' },
+      { label: '最高压力', value: '县保', text: '县保层的资源密度与响应效率更弱。' },
+      { label: '分析结论', value: '资源存在层级差', text: '风险与资源并不是均匀分布。' }
+    ],
     metricCards: [
       { label: '国保样本', value: '439', text: '本地样本是当前看板里最稳定的底座数据。' },
       { label: '风险压力最高', value: '县保', text: '修缮及时率和资源密度均更弱。' },
@@ -884,15 +1331,31 @@ const chartConfigs = {
   },
   trend: {
     key: 'trend',
+    side: 'left',
     title: '数字化覆盖率时间变化',
     subtitle: '趋势图只比较同一单位的覆盖率，避免金额与比例混用。',
     component: LineChart,
     source: '数字化进度专题指标',
     sourceText: '扫描率、建模率和全景采集率按同一覆盖率口径整理。',
+    sourceItems: [
+      { label: '时间范围', value: '2020-2025', text: '按年度整理数字化推进过程。' },
+      { label: '比较指标', value: '3 条曲线', text: '扫描率、建模率、全景采集率使用同一覆盖率口径。' },
+      { label: '当前终值', value: `${scanRate}/${modelRate}/${panoramaRate}`, text: '分别对应当前三段数字化进度。' }
+    ],
     method: '时间序列整理',
     methodText: '把同一单位的覆盖率指标放到统一时间轴中比较。',
+    methodSteps: [
+      { title: '时间整理', text: '把各年度数字化进度统一到同一时间轴。' },
+      { title: '同口径比较', text: '仅比较覆盖率，避免金额、数量与比例混读。' },
+      { title: '差值判断', text: '通过曲线间距识别扫描、建模、全景三段落差。' }
+    ],
     finding: '扫描推进最快',
     findingText: '建模率和全景率仍然低于扫描率，说明数字化链条尚未完全闭合。',
+    conclusionFacts: [
+      { label: '扫描率', value: `${scanRate}%`, text: '基础采集已形成较稳定底图。' },
+      { label: '链条缺口', value: `${fullDigitalGap}pt`, text: '采集到展示之间仍有明显转化差。' },
+      { label: '分析结论', value: '后段偏慢', text: '建模与展示成果仍是当前数字化短板。' }
+    ],
     metricCards: [
       { label: '扫描率', value: '68%', text: '基础采集推进最快，已形成较稳定底图。' },
       { label: '建模率', value: '55%', text: '模型生产仍然是当前链条短板。' },
@@ -932,9 +1395,11 @@ const resolveStatusPanel = (detail) => {
   return statusPanels.完好
 }
 
-const openDetail = (detail) => {
+const openDetail = (detail, side = 'right') => {
   if (!detail) return
   selectedDetail.value = detail
+  panelSide.value = side
+  detailPanelCollapsed.value = false
   detailPulse.value = false
   clearTimeout(pulseTimer)
   requestAnimationFrame(() => {
@@ -945,8 +1410,27 @@ const openDetail = (detail) => {
   })
 }
 
-const openChartZoom = (chart) => {
+const openDetailAt = (side, detail) => {
+  openDetail(detail, side)
+}
+
+const panelPreviewDetail = (panel) => ({
+  title: panel.title,
+  subtitle: panel.subtitle,
+  summary: panel.summaryCards?.[0]?.text || panel.sections?.[0]?.intro || '点击图内的具体数据项可查看更细分的说明。',
+  tags: [panel.kicker, '专题摘要'],
+  facts: panel.summaryCards?.slice(0, 3).map((card) => ({ label: card.label, value: card.value })) || [],
+  highlights: panel.sections?.flatMap((section) => section.items).slice(0, 3) || []
+})
+
+const openChartZoom = (chart, fallbackDetail = null) => {
   zoomedChart.value = chart
+  activeChartMethodStep.value = 0
+  activeChartDataCategory.value = '全部'
+  showChartDataSources.value = false
+  dataSourceOverlay.value = null
+  insightOverlay.value = null
+  if (fallbackDetail) openDetail(fallbackDetail, chart.side || 'right')
   if (chart.key === 'state') {
     activeStatePanel.value = statusPanels.完好
   }
@@ -955,18 +1439,46 @@ const openChartZoom = (chart) => {
 const closeChartZoom = () => {
   zoomedChart.value = null
   activeStatePanel.value = null
+  dataSourceOverlay.value = null
+  insightOverlay.value = null
 }
 
 const openPanelZoom = (panel) => {
   zoomedPanel.value = panel
+  activePanelMethodStep.value = 0
+  activePanelDataCategory.value = '全部'
+  showPanelDataSources.value = false
+  dataSourceOverlay.value = null
+  insightOverlay.value = null
+  openDetail(panelPreviewDetail(panel), panel.side || 'right')
 }
 
 const closePanelZoom = () => {
   zoomedPanel.value = null
+  dataSourceOverlay.value = null
+  insightOverlay.value = null
 }
 
-const handleStatusDetail = (detail) => {
-  openDetail(detail)
+const openDataSourceOverlay = (scope) => {
+  dataSourceOverlay.value = scope
+  activeDataSourceOverlayCategory.value = '全部'
+}
+
+const closeDataSourceOverlay = () => {
+  dataSourceOverlay.value = null
+}
+
+const openInsightOverlay = (scope, type) => {
+  insightOverlay.value = { scope, type }
+  activeInsightStep.value = 0
+}
+
+const closeInsightOverlay = () => {
+  insightOverlay.value = null
+}
+
+const handleStatusDetail = (detail, side = 'right') => {
+  openDetail(detail, side)
   const panel = resolveStatusPanel(detail)
   if (zoomedChart.value?.key === 'state') {
     activeStatePanel.value = panel
@@ -1045,6 +1557,21 @@ const handleStatusDetail = (detail) => {
 
 .hero-actions {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.analysis-hint {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(214, 235, 232, 0.6);
+  border: 1px solid rgba(98, 138, 138, 0.14);
+  color: rgba(46, 78, 78, 0.8);
+  font-size: 0.75rem;
 }
 
 .hero-mini-cards {
@@ -1304,6 +1831,16 @@ const handleStatusDetail = (detail) => {
 
 .disease-card .chart-panel :deep(.chart) {
   min-height: 96px !important;
+}
+
+.findings-card .chart-panel {
+  padding: 2px 2px 0;
+  flex: 0 0 auto;
+}
+
+.findings-card .chart-panel :deep(.chart) {
+  height: 104px !important;
+  min-height: 104px !important;
 }
 
 .digital-layout {
@@ -1568,6 +2105,50 @@ const handleStatusDetail = (detail) => {
   height: 100% !important;
 }
 
+.data-source-modal {
+  width: min(1100px, calc(100vw - 32px));
+}
+
+.data-source-summary {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(214, 235, 232, 0.56);
+  border: 1px solid rgba(98, 138, 138, 0.1);
+}
+
+.data-source-summary span {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(46, 78, 78, 0.72);
+}
+
+.data-source-summary strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.96rem;
+  color: var(--ink);
+}
+
+.data-source-summary p {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: rgba(46, 78, 78, 0.84);
+}
+
+.data-source-table {
+  margin-top: 10px;
+}
+
+.insight-step-panel {
+  margin-top: 14px;
+}
+
+.insight-conclusion-list {
+  margin-top: 10px;
+}
+
 .panel-chart-stage {
   min-height: 360px;
   margin-bottom: 10px;
@@ -1707,6 +2288,202 @@ const handleStatusDetail = (detail) => {
   color: rgba(46, 78, 78, 0.88);
 }
 
+.zoom-note-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.inline-source-toggle {
+  border: 1px solid rgba(98, 138, 138, 0.16);
+  background: rgba(214, 235, 232, 0.9);
+  color: var(--mint-2);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.analysis-deck {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.analysis-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(221, 240, 238, 0.64);
+  border: 1px solid rgba(98, 138, 138, 0.12);
+}
+
+.data-table-card {
+  display: grid;
+  gap: 10px;
+}
+
+.analysis-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.analysis-card-head strong {
+  font-size: 0.84rem;
+  color: var(--ink);
+}
+
+.analysis-card-label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--mint-2);
+}
+
+.analysis-card-note {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: rgba(46, 78, 78, 0.82);
+}
+
+.analysis-source-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.analysis-source-row {
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(214, 235, 232, 0.72);
+  border: 1px solid rgba(98, 138, 138, 0.08);
+}
+
+.analysis-source-row span {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(46, 78, 78, 0.76);
+}
+
+.analysis-source-row strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.analysis-source-row p {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  line-height: 1.42;
+  color: rgba(46, 78, 78, 0.84);
+}
+
+.analysis-pill-row {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analysis-pill {
+  border: 1px solid rgba(98, 138, 138, 0.16);
+  background: rgba(214, 235, 232, 0.88);
+  color: var(--mint-2);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.analysis-pill.active {
+  background: rgb(98, 138, 138);
+  color: white;
+}
+
+.analysis-step-body {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 235, 231, 0.68);
+  border: 1px solid rgba(201, 81, 93, 0.1);
+}
+
+.analysis-step-body strong {
+  display: block;
+  color: #a54d58;
+  font-size: 0.84rem;
+}
+
+.analysis-step-body p {
+  margin-top: 5px;
+  font-size: 0.76rem;
+  line-height: 1.46;
+  color: rgba(46, 78, 78, 0.86);
+}
+
+.analysis-table {
+  display: grid;
+  gap: 8px;
+}
+
+.analysis-table-head,
+.analysis-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) 96px minmax(0, 1.65fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.analysis-table-head {
+  padding: 0 6px;
+  font-size: 0.7rem;
+  color: rgba(46, 78, 78, 0.7);
+}
+
+.analysis-table-row {
+  width: 100%;
+  border: 1px solid rgba(98, 138, 138, 0.08);
+  background: rgba(214, 235, 232, 0.72);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.analysis-table-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(98, 138, 138, 0.2);
+  box-shadow: 0 8px 18px rgba(98, 138, 138, 0.08);
+}
+
+.analysis-table-row span {
+  font-size: 0.76rem;
+  color: var(--ink);
+}
+
+.analysis-table-row strong {
+  font-size: 0.8rem;
+  color: #a54d58;
+}
+
+.analysis-table-row p {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgba(46, 78, 78, 0.84);
+}
+
+.analysis-table-row em {
+  display: block;
+  margin-bottom: 4px;
+  font-style: normal;
+  color: rgba(46, 78, 78, 0.72);
+}
+
 .action-card {
   background: rgba(255, 235, 231, 0.74);
   border-color: rgba(201, 81, 93, 0.12);
@@ -1740,8 +2517,6 @@ const handleStatusDetail = (detail) => {
 
 .detail-toast {
   position: fixed;
-  right: 22px;
-  bottom: 20px;
   z-index: 10;
   display: grid;
   gap: 4px;
@@ -1752,6 +2527,40 @@ const handleStatusDetail = (detail) => {
   box-shadow: 0 10px 20px rgba(98, 138, 138, 0.14);
 }
 
+.detail-shell {
+  position: fixed;
+  bottom: 20px;
+  z-index: 30;
+}
+
+.detail-shell.right {
+  right: 22px;
+}
+
+.detail-shell.left {
+  left: 22px;
+}
+
+.detail-explorer {
+  width: min(360px, calc(100vw - 32px));
+  gap: 10px;
+  padding: 14px;
+  border-radius: 22px;
+}
+
+.detail-explorer.left,
+.detail-explorer.right {
+  right: auto;
+  left: auto;
+}
+
+.detail-explorer-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
 .detail-toast strong {
   color: var(--ink);
   font-size: 0.88rem;
@@ -1760,6 +2569,90 @@ const handleStatusDetail = (detail) => {
 .detail-toast span {
   color: rgba(46, 78, 78, 0.85);
   font-size: 0.76rem;
+}
+
+.detail-summary {
+  font-size: 0.78rem;
+  line-height: 1.48;
+  color: rgba(46, 78, 78, 0.88);
+}
+
+.detail-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail-tag {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(98, 138, 138, 0.12);
+  color: var(--mint-2);
+  font-size: 0.7rem;
+}
+
+.detail-fact-table {
+  display: grid;
+  gap: 6px;
+}
+
+.detail-fact-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.72fr) minmax(0, 1.28fr);
+  gap: 10px;
+  align-items: start;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: rgba(214, 235, 232, 0.56);
+  border: 1px solid rgba(98, 138, 138, 0.1);
+}
+
+.detail-fact-row span {
+  color: rgba(46, 78, 78, 0.72);
+  font-size: 0.72rem;
+}
+
+.detail-fact-row strong {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.detail-highlight-block {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 235, 231, 0.62);
+  border: 1px solid rgba(201, 81, 93, 0.12);
+}
+
+.detail-subhead {
+  display: block;
+  font-size: 0.72rem;
+  color: #b45a63;
+}
+
+.detail-highlight-block ul {
+  margin-top: 8px;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+  color: rgba(46, 78, 78, 0.9);
+  font-size: 0.76rem;
+  line-height: 1.42;
+}
+
+.detail-toggle {
+  border: 1px solid rgba(98, 138, 138, 0.16);
+  background: rgba(214, 235, 232, 0.86);
+  color: var(--mint-2);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.collapsed-toggle {
+  box-shadow: 0 10px 20px rgba(98, 138, 138, 0.12);
 }
 
 .detail-toast.pulse {
@@ -1795,7 +2688,8 @@ const handleStatusDetail = (detail) => {
   .building-card-grid,
   .zoom-note-grid,
   .zoom-sections,
-  .zoom-metric-grid {
+  .zoom-metric-grid,
+  .analysis-deck {
     grid-template-columns: 1fr;
   }
 
@@ -1808,6 +2702,21 @@ const handleStatusDetail = (detail) => {
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: none;
+  }
+
+  .analysis-table-head,
+  .analysis-table-row {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-shell {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px;
+  }
+
+  .detail-explorer {
+    width: calc(100vw - 24px);
   }
 
   .state-legend {
